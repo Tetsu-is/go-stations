@@ -2,6 +2,7 @@ package sta5_test
 
 import (
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -38,6 +39,7 @@ func TestStation5(t *testing.T) {
 	r := router.NewRouter(todoDB)
 	srv := httptest.NewServer(r)
 	defer srv.Close()
+	log.Println(srv.URL)
 	req, err := http.NewRequest(http.MethodGet, srv.URL+"/healthz", nil)
 	if err != nil {
 		t.Error("リクエストの作成に失敗しました。", err)
