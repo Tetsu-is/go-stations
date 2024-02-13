@@ -13,6 +13,7 @@ type TODOService struct {
 }
 
 // NewTODOService returns new TODOService.
+// dbをメンバに持つTODOServiceを新しく作って返しているんだね
 func NewTODOService(db *sql.DB) *TODOService {
 	return &TODOService{
 		db: db,
@@ -20,13 +21,40 @@ func NewTODOService(db *sql.DB) *TODOService {
 }
 
 // CreateTODO creates a TODO on DB.
+// 引数はcontext, subject, descriptionを受け取っているね
 func (s *TODOService) CreateTODO(ctx context.Context, subject, description string) (*model.TODO, error) {
 	const (
 		insert  = `INSERT INTO todos(subject, description) VALUES(?, ?)`
 		confirm = `SELECT subject, description, created_at, updated_at FROM todos WHERE id = ?`
 	)
 
-	return nil, nil
+	s.db.PrepareContext(ctx, insert)
+	s.db.PrepareContext(ctx, confirm)
+
+	result, err := s.db.ExecContext(ctx, insert, subject, description)
+	if err != nil {
+		return nil, err
+	}
+
+	id, _ := result.LastInsertId()
+
+	row := s.db.QueryRowContext(ctx, confirm, id)
+
+	var todo model.TODO
+	row.Scan(&todo.Subject, &todo.Description, &todo.CreatedAt, &todo.UpdatedAt)
+
+	//あまり綺麗ではない
+	todo.ID = int(id)
+
+	if todo.Subject == "" {
+		return &todo, nil
+	}
+
+	if todo.Description == "" {
+		return &todo, nil
+	}
+
+	return &todo, nil
 }
 
 // ReadTODO reads TODOs on DB.
